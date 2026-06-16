@@ -13,6 +13,22 @@ mkdir -p data        # local output folder
 EXCEL_FOLDER=./data uv run app.py   # run the dev server (http://localhost:5000)
 ```
 
+## Configuration
+
+| Variable         | Default  | Description                                                                 |
+| ---------------- | -------- | --------------------------------------------------------------------------- |
+| `EXCEL_FOLDER`   | `/data`  | Directory the Excel workbooks are written to. Use `./data` for local runs.  |
+| `WEBHOOK_SECRET` | _(unset)_| Shared secret required to call `/webhook`. When unset the endpoint is open. |
+| `LOG_LEVEL`      | `INFO`   | Python logging level.                                                       |
+
+When `WEBHOOK_SECRET` is set, callers must present it in one of these ways:
+
+```
+X-Webhook-Secret: <secret>
+Authorization: Bearer <secret>
+POST /webhook?secret=<secret>
+```
+
 Common dependency tasks:
 
 ```bash

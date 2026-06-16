@@ -1,4 +1,5 @@
 import glob
+import hmac
 import logging
 import os
 import re
@@ -28,9 +29,39 @@ if not os.path.exists(EXCEL_FOLDER):
         "Mount a volume there or set EXCEL_FOLDER to an existing directory."
     )
 
+# Shared secret protecting the webhook. When unset the endpoint is open,
+# which is only appropriate for local/private use.
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
+if not WEBHOOK_SECRET:
+    app.logger.warning(
+        "WEBHOOK_SECRET is not set; the /webhook endpoint is unauthenticated."
+    )
+
 for f in glob.glob(EXCEL_FOLDER + "/*.lock"):
     app.logger.info(f"Deleting stale lock file on startup: {f}")
     os.remove(f)
+
+
+def _provided_secret() -> str:
+    """Read the webhook secret from the request.
+
+    Supports an X-Webhook-Secret header, an Authorization: Bearer token, or a
+    ?secret= query parameter, since form providers differ in what they allow.
+    """
+    header = request.headers.get("X-Webhook-Secret")
+    if header:
+        return header
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return auth[len("Bearer ") :]
+    return request.args.get("secret", "")
+
+
+def is_authorized() -> bool:
+    """True if no secret is configured, or the request presents the correct one."""
+    if not WEBHOOK_SECRET:
+        return True
+    return hmac.compare_digest(_provided_secret(), WEBHOOK_SECRET)
 
 
 def sanitize_filename(name: str):
@@ -131,6 +162,9 @@ def append_data(workbook: Workbook, data: dict):
 def handle_webhook():
     """Handle incoming webhooks and save data to an Excel file."""
     try:
+        if not is_authorized():
+            return jsonify({"error": "Unauthorized"}), 401
+
         # Extract JSON payload
         if not request.json:
             return jsonify({"error": "No data provided"}), 400
