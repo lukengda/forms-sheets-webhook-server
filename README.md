@@ -18,16 +18,19 @@ EXCEL_FOLDER=./data uv run app.py   # run the dev server (http://localhost:5000)
 | Variable         | Default  | Description                                                                 |
 | ---------------- | -------- | --------------------------------------------------------------------------- |
 | `EXCEL_FOLDER`   | `/data`  | Directory the Excel workbooks are written to. Use `./data` for local runs.  |
-| `WEBHOOK_SECRET` | _(unset)_| Shared secret required to call `/webhook`. When unset the endpoint is open. |
+| `WEBHOOK_SECRET` | _(unset)_| Secret used to verify OpnForm's request signature. When unset the endpoint is open. |
 | `LOG_LEVEL`      | `INFO`   | Python logging level.                                                       |
 
-When `WEBHOOK_SECRET` is set, callers must present it in one of these ways:
+When `WEBHOOK_SECRET` is set, the server verifies the HMAC-SHA256 signature
+that [OpnForm](https://docs.opnform.com/api-reference/integrations/webhook-security)
+sends with every delivery:
 
 ```
-X-Webhook-Secret: <secret>
-Authorization: Bearer <secret>
-POST /webhook?secret=<secret>
+X-Webhook-Signature: sha256=<hex HMAC-SHA256 of the raw request body, keyed with the secret>
 ```
+
+Set the same value here and in OpnForm's webhook **Advanced → Webhook Secret**
+field. Requests with a missing or invalid signature are rejected with `401`.
 
 ### Generating a secret
 

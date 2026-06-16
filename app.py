@@ -1,4 +1,5 @@
 import glob
+import hashlib
 import hmac
 import logging
 import os
@@ -29,8 +30,8 @@ if not os.path.exists(EXCEL_FOLDER):
         "Mount a volume there or set EXCEL_FOLDER to an existing directory."
     )
 
-# Shared secret protecting the webhook. When unset the endpoint is open,
-# which is only appropriate for local/private use.
+# Secret used to verify OpnForm's HMAC-SHA256 request signature. When unset
+# the endpoint is open, which is only appropriate for local/private use.
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
 if not WEBHOOK_SECRET:
     app.logger.warning(
@@ -42,26 +43,21 @@ for f in glob.glob(EXCEL_FOLDER + "/*.lock"):
     os.remove(f)
 
 
-def _provided_secret() -> str:
-    """Read the webhook secret from the request.
+def is_authorized(raw_body: bytes) -> bool:
+    """True if no secret is configured, or the request carries a valid signature.
 
-    Supports an X-Webhook-Secret header, an Authorization: Bearer token, or a
-    ?secret= query parameter, since form providers differ in what they allow.
+    OpnForm signs each delivery with HMAC-SHA256 over the raw request body and
+    sends it as ``X-Webhook-Signature: sha256=<hex>``. The signature must be
+    computed over the raw bytes, not re-serialized JSON.
     """
-    header = request.headers.get("X-Webhook-Secret")
-    if header:
-        return header
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        return auth[len("Bearer ") :]
-    return request.args.get("secret", "")
-
-
-def is_authorized() -> bool:
-    """True if no secret is configured, or the request presents the correct one."""
     if not WEBHOOK_SECRET:
         return True
-    return hmac.compare_digest(_provided_secret(), WEBHOOK_SECRET)
+    received = request.headers.get("X-Webhook-Signature", "")
+    expected = (
+        "sha256="
+        + hmac.new(WEBHOOK_SECRET.encode(), raw_body, hashlib.sha256).hexdigest()
+    )
+    return hmac.compare_digest(received, expected)
 
 
 def sanitize_filename(name: str):
@@ -162,7 +158,7 @@ def append_data(workbook: Workbook, data: dict):
 def handle_webhook():
     """Handle incoming webhooks and save data to an Excel file."""
     try:
-        if not is_authorized():
+        if not is_authorized(request.get_data()):
             return jsonify({"error": "Unauthorized"}), 401
 
         # Extract JSON payload
