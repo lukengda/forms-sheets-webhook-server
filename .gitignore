@@ -1,0 +1,13 @@
+# Runtime data (mounted Excel sheets and lock files)
+/data/
+*.xlsx
+*.lock
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+.DS_Store
