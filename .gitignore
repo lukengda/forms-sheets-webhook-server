@@ -1,7 +1,8 @@
-# Runtime data (mounted Excel sheets and lock files)
+# Runtime data (mounted Excel sheets and file locks)
 /data/
 *.xlsx
 *.lock
+!uv.lock
 
 # Python
 __pycache__/
