@@ -18,9 +18,15 @@ logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.INFO))
 
 FORM_RESPONSE_SHEET = "Form Responses"
 FORM_RESPONSE_SHEET_AUTO_HEIGHT = "Form Responses (auto-height)"
-EXCEL_FOLDER = "/data"
+
+# Output folder for the Excel workbooks. Defaults to the container mount
+# point (/data); override with EXCEL_FOLDER to run locally, e.g. ./data.
+EXCEL_FOLDER = os.getenv("EXCEL_FOLDER", "/data")
 if not os.path.exists(EXCEL_FOLDER):
-    raise Exception("Expected /data to be mounted to write excel sheets too.")
+    raise Exception(
+        f"Excel output folder {EXCEL_FOLDER!r} does not exist. "
+        "Mount a volume there or set EXCEL_FOLDER to an existing directory."
+    )
 
 for f in glob.glob(EXCEL_FOLDER + "/*.lock"):
     app.logger.info(f"Deleting stale lock file on startup: {f}")

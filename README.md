@@ -9,7 +9,8 @@ Dependencies are managed with [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync              # create .venv and install locked dependencies
-uv run app.py        # run the dev server (http://localhost:5000)
+mkdir -p data        # local output folder
+EXCEL_FOLDER=./data uv run app.py   # run the dev server (http://localhost:5000)
 ```
 
 Common dependency tasks:
