@@ -29,6 +29,26 @@ Authorization: Bearer <secret>
 POST /webhook?secret=<secret>
 ```
 
+### Generating a secret
+
+The secret is just a long random string. Generate one with either:
+
+```bash
+openssl rand -hex 32                                          # 64 hex chars
+python -c "import secrets; print(secrets.token_urlsafe(32))"  # url-safe
+```
+
+Provide it to the container via the environment, e.g. a `.env` file next to
+`docker-compose.yaml` (Compose loads it automatically):
+
+```bash
+echo "WEBHOOK_SECRET=$(openssl rand -hex 32)" >> .env
+docker compose up --build
+```
+
+Use a different secret per environment, and serve behind TLS so it is not sent
+in clear text.
+
 Common dependency tasks:
 
 ```bash

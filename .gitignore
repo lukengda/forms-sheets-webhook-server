@@ -1,6 +1,9 @@
 # Runtime data (mounted Excel sheets and file locks)
 /data/
 
+# Secrets / local environment
+.env
+
 # Python
 __pycache__/
 *.py[cod]
