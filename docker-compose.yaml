@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  webhook-server:
+    build: forms-sheets-webhook-server
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./data:/data
